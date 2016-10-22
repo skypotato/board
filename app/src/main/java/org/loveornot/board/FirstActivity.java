@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 public class FirstActivity extends AppCompatActivity {
 
+    private MenuSharedPreferences menuSharedPreferences;
     private boolean switchFlag = false;
 
     private AnimationDrawable frameAnimation;
@@ -32,7 +33,10 @@ public class FirstActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_first);
+         /*menuInfo설정*/
+        menuSharedPreferences = new MenuSharedPreferences(this);
 
+        /*광고 FrameAnimation 설정*/
         imageBottom = (ImageView)findViewById(R.id.imageBottom);
         imageBottom.setBackgroundResource(R.drawable.ad_list);
         frameAnimation = (AnimationDrawable) imageBottom.getBackground();
@@ -87,23 +91,28 @@ public class FirstActivity extends AppCompatActivity {
         Intent intent = new Intent(FirstActivity.this, MainActivity.class);
         switch (view.getId()) {
             case R.id.sellBt:
-                Toast.makeText(getApplicationContext(), "갑니다....", Toast.LENGTH_LONG).show();
+                menuSharedPreferences.storeMenu("sell");
+                Toast.makeText(getApplicationContext(), menuSharedPreferences.getMenu(), Toast.LENGTH_LONG).show();
                 startActivity(intent);
                 break;
             case R.id.buyBt:
-                Toast.makeText(getApplicationContext(), "갑니다....", Toast.LENGTH_LONG).show();
+                menuSharedPreferences.storeMenu("buy");
+                Toast.makeText(getApplicationContext(), menuSharedPreferences.getMenu(), Toast.LENGTH_LONG).show();
                 startActivity(intent);
                 break;
             case R.id.freeBt:
-                Toast.makeText(getApplicationContext(), "갑니다....", Toast.LENGTH_LONG).show();
+                menuSharedPreferences.storeMenu("free");
+                Toast.makeText(getApplicationContext(), menuSharedPreferences.getMenu(), Toast.LENGTH_LONG).show();
                 startActivity(intent);
                 break;
             case R.id.unknownBt:
-                Toast.makeText(getApplicationContext(), "갑니다....", Toast.LENGTH_LONG).show();
+                menuSharedPreferences.storeMenu("unknown");
+                Toast.makeText(getApplicationContext(), menuSharedPreferences.getMenu(), Toast.LENGTH_LONG).show();
                 startActivity(intent);
                 break;
             case R.id.transBt:
-                Toast.makeText(getApplicationContext(), "갑니다....", Toast.LENGTH_LONG).show();
+                menuSharedPreferences.storeMenu("trans");
+                Toast.makeText(getApplicationContext(), menuSharedPreferences.getMenu(), Toast.LENGTH_LONG).show();
                 startActivity(intent);
                 break;
         }

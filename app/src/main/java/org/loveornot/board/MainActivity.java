@@ -1,5 +1,6 @@
 package org.loveornot.board;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -12,6 +13,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -44,11 +47,35 @@ public class MainActivity extends AppCompatActivity
     private int page = 0;
     private int pageTotal = 0;
 
+    private ImageButton cancleBt;
+    private ImageButton searchBt;
+    private EditText searchEdit;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        /*menuInfo설정*/
+        /*검색 설정*/
+        searchEdit = (EditText)findViewById(R.id.search_edit);
+        cancleBt = (ImageButton)findViewById(R.id.cancleBt);
+        searchBt = (ImageButton)findViewById(R.id.searchBt);
 
+        cancleBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchEdit.setText(null);
+            }
+        });
+
+        searchBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                /*검색조건*/
+            }
+        });
+
+        /*새로고침뷰 설정*/
         mPullToRefreshListView = (PullToRefreshListView) findViewById(R.id.pull_to_refresh_list);
         mPullToRefreshListView.setOnRefreshListener(new PullToRefreshBase.OnRefreshListener<ListView>() {
             @Override
@@ -57,6 +84,7 @@ public class MainActivity extends AppCompatActivity
                         DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_ABBREV_ALL);
                 refreshView.getLoadingLayoutProxy().setLastUpdatedLabel(label);
                 page = 0;
+                requestVolley("pageTotal.php");
                 requestVolley("select.php");
             }
         });
@@ -148,6 +176,12 @@ public class MainActivity extends AppCompatActivity
             case R.id.nav_free:
                 break;
             case R.id.nav_translation:
+                break;
+            case R.id.nav_insert:
+                Intent intent = new Intent(MainActivity.this,InsertActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.nav_search:
                 break;
         }
 

@@ -10,9 +10,9 @@
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay"
         android:focusable="false"
-        android:focusableInTouchMode="false">
+        android:focusableInTouchMode="false"
+        android:theme="@style/AppTheme.AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
@@ -28,30 +28,38 @@
             android:background="#2db400"
             android:gravity="center_horizontal"
             android:orientation="horizontal"
+            android:paddingBottom="8dp"
             android:paddingLeft="8dp"
             android:paddingRight="8dp"
-            android:paddingBottom="8dp"
             android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:background="#ffffff"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:background="#ffffff">
+
                 <EditText
                     android:id="@+id/search_edit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="전체검색을 하시려면 공백을 입력하세요."
-                    android:textSize="12dp" />
-                <Button
-                    android:text="지움"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-                <Button
+                    android:textColor="#000000" />
+
+                <ImageButton
+                    android:id="@+id/cancleBt"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="검색" />
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/cancle"
+                    android:padding="5dp" />
+
+                <ImageButton
+                    android:id="@+id/searchBt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:background="@drawable/g_search"
+                    android:padding="5dp" />
             </LinearLayout>
 
         </LinearLayout>
