@@ -55,7 +55,7 @@ public class TextListAdapter extends BaseAdapter {
         TextView hit = (TextView) view.findViewById(R.id.dataItem03);
 
         title.setText(items.get(position).getTitle());
-        name.setText("작성자 : "+items.get(position).getId());
+        name.setText("작성자 : "+items.get(position).getName());
         hit.setText(items.get(position).getHit());
         return view;
     }

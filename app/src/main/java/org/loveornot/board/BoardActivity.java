@@ -1,12 +1,13 @@
 package org.loveornot.board;
 
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
+import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -25,80 +26,115 @@ import java.util.Map;
 
 public class
         BoardActivity extends AppCompatActivity {
-    EditText editText;
-    TextView textView;
+    private final String urlStr = "http://skypotato.esy.es/";
 
-    Handler handler = new Handler();
+    private String no;
+
+    private TextView titleTxt;
+    private TextView nameTxt;
+    private TextView dateTxt;
+    private TextView hitTxt;
+    private TextView contentTxt;
+
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_board);
 
-        editText = (EditText) findViewById(R.id.editText);
-        textView = (TextView) findViewById(R.id.textView);
+        Intent intent = getIntent();
+        if (intent != null) {
+            no = intent.getStringExtra("no");
+        } else {
+            Toast.makeText(getApplicationContext(), "no가 없습니다.", Toast.LENGTH_SHORT).show();
+            finish();
+        }
 
-        Button button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                requestVolley();
-            }
-        });
+            /* 뒤로가기버튼 추가*/
+        ActionBar actionBar = getSupportActionBar();
+
+        actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeButtonEnabled(true);
+
+        titleTxt = (TextView) findViewById(R.id.titleTxt);
+        nameTxt = (TextView) findViewById(R.id.nameTxt);
+        dateTxt = (TextView) findViewById(R.id.dateTxt);
+        hitTxt = (TextView) findViewById(R.id.hitTxt);
+        contentTxt = (TextView) findViewById(R.id.contentTxt);
+
+        mProgressDialog = ProgressDialog.show(BoardActivity.this, "",
+                "잠시만 기다려 주세요.", true);
+        requestVolley("updateHit.php");
+        requestVolley("selectOne.php");
     }
 
-    public void requestVolley() {
-        String urlStr = editText.getText().toString();
-
-        StringRequest request = new StringRequest(
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home: //뒤로가기 액션
+                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+    public void requestVolley(String str) {
+        final String strmenu = str;
+        String url = urlStr + str;
+        final StringRequest request = new StringRequest(
                 Request.Method.POST,
-                urlStr,
+                url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        print("수신 데이터 : " + response);
-                        processResponse(response);
+                        if (response != null) {
+                            if(strmenu.equals("selectOne.php")) {
+                                processResponse(response);
+                            }else{
+                                Toast.makeText(getApplicationContext(),response,Toast.LENGTH_SHORT).show();
+                            }
+                        }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         error.printStackTrace();
+                        if (mProgressDialog!=null&&mProgressDialog.isShowing()){
+                            mProgressDialog.dismiss();
+                        }
                     }
                 }
         ) {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
-                //params.put("mobile", "010-1000-1000");
+                params.put("no", no);
                 return params;
             }
         };
 
         RequestQueue queue = Volley.newRequestQueue(this);
         request.setShouldCache(false);
-        queue.add(request);
-        print("웹서버에 요청함.");
-
+        queue.add(request); // 통신시작
     }
-    private void processResponse(String response) {
+
+    public void processResponse(String response) {
         Gson gson = new Gson();
 
-        Type arraylistType = new TypeToken<ArrayList<Board>>(){}.getType();
+        Type arraylistType = new TypeToken<ArrayList<Board>>() {
+        }.getType();
         ArrayList<Board> board = gson.fromJson(response, arraylistType);
-        print("매출 데이터 갯수 : " + board.size());
-        for (int i = 0; i < board.size(); i++) {
-            Board board_ = board.get(i);
-            print(board_.no + ", " + board_.title+ ", " + board_.hit+ ", " + board_.content+ ", " + board_.date+ ", " + board_.id+ ", " + board_.password);
-        }
-    }
+        titleTxt.setText(board.get(0).getTitle());
+        nameTxt.setText("작성자 : "+board.get(0).getName());
+        dateTxt.setText(board.get(0).getDate());
+        hitTxt.setText("조회수 : "+board.get(0).getHit());
+        contentTxt.setText(board.get(0).getContent());
 
-    public void print(final String data) {
-        handler.post(new Runnable() {
-            public void run() {
-                textView.append(data + "\n");
-            }
-        });
+        if (mProgressDialog!=null&&mProgressDialog.isShowing()){
+            mProgressDialog.dismiss();
+        }
+
     }
 
 }

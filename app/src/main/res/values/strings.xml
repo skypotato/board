@@ -2,6 +2,9 @@
     <string name="app_name">S.C.C</string>
     <string name="title_activity_main">S.C.C</string>
 
+    <string name="facebook_app_id">1784528748495613</string>
+    <string name="fb_login_protocol_scheme">1784528748495613</string>
+
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 

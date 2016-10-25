@@ -1,5 +1,6 @@
 package org.loveornot.board;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
@@ -15,6 +16,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -26,6 +28,8 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.facebook.FacebookSdk;
+import com.facebook.appevents.AppEventsLogger;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
@@ -51,15 +55,30 @@ public class MainActivity extends AppCompatActivity
     private ImageButton searchBt;
     private EditText searchEdit;
 
+    private ImageView imageView;
+
+    private boolean requestWaitFlag = false;// 통신 중복을 막기위한 Flag
+
+    private MenuSharedPreferences menuSharedPreferences;
+
+    private ProgressDialog mProgressDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        /*Facebook*/
+        FacebookSdk.sdkInitialize(getApplicationContext());
+        AppEventsLogger.activateApp(this);
         /*menuInfo설정*/
+        menuSharedPreferences = new MenuSharedPreferences(this);
+
+        imageView = (ImageView) findViewById(R.id.imageTitle);
+        setTitleImage();
         /*검색 설정*/
-        searchEdit = (EditText)findViewById(R.id.search_edit);
-        cancleBt = (ImageButton)findViewById(R.id.cancleBt);
-        searchBt = (ImageButton)findViewById(R.id.searchBt);
+        searchEdit = (EditText) findViewById(R.id.search_edit);
+        cancleBt = (ImageButton) findViewById(R.id.cancleBt);
+        searchBt = (ImageButton) findViewById(R.id.searchBt);
 
         cancleBt.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -83,20 +102,28 @@ public class MainActivity extends AppCompatActivity
                 String label = DateUtils.formatDateTime(getApplicationContext(), System.currentTimeMillis(),
                         DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_ABBREV_ALL);
                 refreshView.getLoadingLayoutProxy().setLastUpdatedLabel(label);
-                page = 0;
-                requestVolley("pageTotal.php");
-                requestVolley("select.php");
+                if (requestWaitFlag) {
+                    Toast.makeText(getApplicationContext(), "통신 중 입니다.", Toast.LENGTH_SHORT).show();
+                } else {
+                    page = 0;
+                    requestVolley("pageTotal.php");
+                    requestVolley("select.php");
+                }
             }
         });
         mPullToRefreshListView.setOnLastItemVisibleListener(new PullToRefreshBase.OnLastItemVisibleListener() {
             @Override
             public void onLastItemVisible() {
-                page++;
-                if (page < pageTotal) {
-                    Toast.makeText(getApplicationContext(), "다음 페이지를 불러옵니다.", Toast.LENGTH_SHORT).show(); // 마지막 list 작업
-                    requestVolley("select.php");
+                if (requestWaitFlag) {
+                    Toast.makeText(getApplicationContext(), "통신 중 입니다.", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(getApplicationContext(), "더 이상 게시물이 없습니다.", Toast.LENGTH_SHORT).show(); // 마지막 list 작업
+                    page++;
+                    if (page < pageTotal) {
+                        Toast.makeText(getApplicationContext(), "다음 페이지를 불러옵니다.", Toast.LENGTH_SHORT).show(); // 마지막 list 작업
+                        requestVolley("select.php");
+                    } else {
+                        Toast.makeText(getApplicationContext(), "더 이상 게시물이 없습니다.", Toast.LENGTH_SHORT).show(); // 마지막 list 작업
+                    }
                 }
             }
         });
@@ -107,10 +134,15 @@ public class MainActivity extends AppCompatActivity
         actualListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(MainActivity.this, BoardActivity.class);
                 Board board = (Board) mAdapter.getItem(position - 1);//onItemClick의 position은 1부터 시작.
+                intent.putExtra("no", board.getNo());
                 Toast.makeText(getApplicationContext(), board.getNo(), Toast.LENGTH_SHORT).show();
+                startActivity(intent);
             }
         });
+        mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                "잠시만 기다려 주세요.", true);
         requestVolley("pageTotal.php");
         requestVolley("select.php");
 
@@ -161,27 +193,86 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    private void setTitleImage() {
+        switch (menuSharedPreferences.getMenu()) {
+            case "free":
+                imageView.setImageResource(R.drawable.t_free);
+                break;
+            case "sell":
+                imageView.setImageResource(R.drawable.t_sell);
+                break;
+            case "buy":
+                imageView.setImageResource(R.drawable.t_buy);
+                break;
+            case "trans":
+                imageView.setImageResource(R.drawable.t_trans);
+                break;
+            case "unknown":
+                imageView.setImageResource(R.drawable.t_unknown);
+                break;
+        }
+    }
+
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
+        Intent intent;
+
         int id = item.getItemId();
 
         switch (id) {
             case R.id.nav_sell:
+                menuSharedPreferences.storeMenu("sell");
+                page=0;
+                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                        "잠시만 기다려 주세요.", true);
+                requestVolley("pageTotal.php");
+                requestVolley("select.php");
+                setTitleImage();
                 break;
             case R.id.nav_buy:
+                menuSharedPreferences.storeMenu("buy");
+                page=0;
+                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                        "잠시만 기다려 주세요.", true);
+                requestVolley("pageTotal.php");
+                requestVolley("select.php");
+                setTitleImage();
                 break;
             case R.id.nav_anonymous:
+                menuSharedPreferences.storeMenu("unknown");
+                page=0;
+                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                        "잠시만 기다려 주세요.", true);
+                requestVolley("pageTotal.php");
+                requestVolley("select.php");
+                setTitleImage();
                 break;
             case R.id.nav_free:
+                menuSharedPreferences.storeMenu("free");
+                page=0;
+                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                        "잠시만 기다려 주세요.", true);
+                requestVolley("pageTotal.php");
+                requestVolley("select.php");
+                setTitleImage();
                 break;
             case R.id.nav_translation:
+                menuSharedPreferences.storeMenu("trans");
+                page=0;
+                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                        "잠시만 기다려 주세요.", true);
+                requestVolley("pageTotal.php");
+                requestVolley("select.php");
+                setTitleImage();
                 break;
             case R.id.nav_insert:
-                Intent intent = new Intent(MainActivity.this,InsertActivity.class);
+                intent = new Intent(MainActivity.this, InsertActivity.class);
                 startActivity(intent);
                 break;
-            case R.id.nav_search:
+            case R.id.nav_login:
+                intent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivity(intent);
                 break;
         }
 
@@ -193,12 +284,13 @@ public class MainActivity extends AppCompatActivity
     public void requestVolley(String str) {
         final String strmenu = str;
         String url = urlStr + str;
-        StringRequest request = new StringRequest(
+        final StringRequest request = new StringRequest(
                 Request.Method.POST,
                 url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
+                        requestWaitFlag = false;
                         if (response != null) {
                             if (strmenu.equals("select.php")) {
                                 processResponse(response);
@@ -212,6 +304,10 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         error.printStackTrace();
+                        requestWaitFlag = false;
+                        if (mProgressDialog!=null&&mProgressDialog.isShowing()){
+                            mProgressDialog.dismiss();
+                        }
                     }
                 }
         ) {
@@ -219,14 +315,17 @@ public class MainActivity extends AppCompatActivity
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("page", Integer.toString(page));
+                params.put("type", menuSharedPreferences.getMenu());
                 return params;
             }
         };
 
         RequestQueue queue = Volley.newRequestQueue(this);
         request.setShouldCache(false);
-        queue.add(request);
+        queue.add(request); // 통신시작
+        requestWaitFlag = true;
     }
+
 
     public void processPageTotal(String response) {
         if (response != null) {
@@ -247,6 +346,10 @@ public class MainActivity extends AppCompatActivity
         }
         mAdapter.notifyDataSetChanged();
         mPullToRefreshListView.onRefreshComplete();
+
+        if (mProgressDialog!=null&&mProgressDialog.isShowing()){
+            mProgressDialog.dismiss();
+        }
     }
 
 }

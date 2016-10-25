@@ -10,25 +10,35 @@ public class Board {
     String date;
     String hit;
     String id;
+    String name;
     String password;
     String type;
 
-    public Board(String title, String id, String hit, String no) {
+    public Board(String title, String name, String hit, String no) {
         this.title = title;
-        this.id = id;
+        this.name = name;
         this.hit = hit;
         this.no = no;
     }
 
-    public Board(String content, String date, String hit, String id, String no, String password, String title, String type) {
+    public Board(String content, String date, String hit, String id, String name, String no, String password, String title, String type) {
         this.content = content;
         this.date = date;
         this.hit = hit;
         this.id = id;
+        this.name = name;
         this.no = no;
         this.password = password;
         this.title = title;
         this.type = type;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getContent() {
