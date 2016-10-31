@@ -31,6 +31,7 @@ import com.android.volley.toolbox.Volley;
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.handmark.pulltorefresh.library.PullToRefreshBase;
 import com.handmark.pulltorefresh.library.PullToRefreshListView;
@@ -43,59 +44,57 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    /* 끌어서 새로고침 뷰와 어댑터 */
     private PullToRefreshListView mPullToRefreshListView;
-    private ArrayList<Board> mDataSet = new ArrayList<Board>();
     private TextListAdapter mAdapter;
 
-    private final String urlStr = "http://skypotato.esy.es/";
+    /* 서버 URL */
+    private final String urlStr = "http://skypotato.esy.es/board/";
+
+    /* 총 페이지 및 현재 페이지 */
     private int page = 0;
     private int pageTotal = 0;
 
+    /* 검색창 */
     private ImageButton cancleBt;
     private ImageButton searchBt;
     private EditText searchEdit;
 
+    /* 게시판 타이틀 이미지 */
     private ImageView imageView;
 
-    private boolean requestWaitFlag = false;// 통신 중복을 막기위한 Flag
+    /* 통신 중복을 막기위한 Flag */
+    private boolean requestWaitFlag = false;
 
+    /* 메뉴 저장 */
     private MenuSharedPreferences menuSharedPreferences;
 
+    /* 프로그래스바 */
     private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         /*Facebook*/
         FacebookSdk.sdkInitialize(getApplicationContext());
         AppEventsLogger.activateApp(this);
+
         /*menuInfo설정*/
         menuSharedPreferences = new MenuSharedPreferences(this);
 
+        /* 구성요소 연결 */
         imageView = (ImageView) findViewById(R.id.imageTitle);
-        setTitleImage();
-        /*검색 설정*/
         searchEdit = (EditText) findViewById(R.id.search_edit);
         cancleBt = (ImageButton) findViewById(R.id.cancleBt);
         searchBt = (ImageButton) findViewById(R.id.searchBt);
 
-        cancleBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchEdit.setText(null);
-            }
-        });
-
-        searchBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                /*검색조건*/
-            }
-        });
 
         /*새로고침뷰 설정*/
+        mAdapter = new TextListAdapter(this);
         mPullToRefreshListView = (PullToRefreshListView) findViewById(R.id.pull_to_refresh_list);
+
         mPullToRefreshListView.setOnRefreshListener(new PullToRefreshBase.OnRefreshListener<ListView>() {
             @Override
             public void onRefresh(PullToRefreshBase<ListView> refreshView) {
@@ -105,9 +104,7 @@ public class MainActivity extends AppCompatActivity
                 if (requestWaitFlag) {
                     Toast.makeText(getApplicationContext(), "통신 중 입니다.", Toast.LENGTH_SHORT).show();
                 } else {
-                    page = 0;
-                    requestVolley("pageTotal.php");
-                    requestVolley("select.php");
+                    refreshData();
                 }
             }
         });
@@ -127,25 +124,44 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
+
+        /* 리스트 뷰 어댑터 등록 */
         ListView actualListView = mPullToRefreshListView.getRefreshableView();
-        mAdapter = new TextListAdapter(this);
-        mAdapter.addList(mDataSet);
         actualListView.setAdapter(mAdapter);
+
         actualListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
                 Intent intent = new Intent(MainActivity.this, BoardActivity.class);
-                Board board = (Board) mAdapter.getItem(position - 1);//onItemClick의 position은 1부터 시작.
+                Board board = (Board) mAdapter.getItem(position - 1);// onItemClick의 position은 1부터 시작.
                 intent.putExtra("no", board.getNo());
-                Toast.makeText(getApplicationContext(), board.getNo(), Toast.LENGTH_SHORT).show();
                 startActivity(intent);
+
             }
         });
-        mProgressDialog = ProgressDialog.show(MainActivity.this, "",
-                "잠시만 기다려 주세요.", true);
-        requestVolley("pageTotal.php");
-        requestVolley("select.php");
+        cancleBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchEdit.setText(null);
+            }
+        });
+        searchBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (searchEdit.getText().toString() != null) {
+                    try {
+                        menuSharedPreferences.storeSearch(searchEdit.getText().toString());
+                        refreshData();
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        setTitleImage();
 
+        /* 네비게이션 바 */
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.inflateMenu(R.menu.main);
         setSupportActionBar(toolbar);
@@ -161,6 +177,20 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    protected void onResume() {
+        refreshData();
+        super.onResume();
+    }
+
+    private void refreshData() {
+        page = 0;
+        mProgressDialog = ProgressDialog.show(MainActivity.this, "",
+                "잠시만 기다려 주세요.", true);
+        requestVolley("pageTotal.php");
+        requestVolley("select.php");
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
@@ -170,14 +200,13 @@ public class MainActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
-            case R.id.action_search:
+            case R.id.action_search: // 검색창 숨김 여부
                 LinearLayout layout = (LinearLayout) findViewById(R.id.searchHolder);
                 if (layout.getVisibility() == View.GONE) {
                     layout.setVisibility(View.VISIBLE);
                 } else {
                     layout.setVisibility(View.GONE);
                 }
-
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -193,6 +222,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /* 타이틀 이미지 선택 함수 */
     private void setTitleImage() {
         switch (menuSharedPreferences.getMenu()) {
             case "free":
@@ -213,57 +243,37 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /* 네비게이션 메뉴 선택 이벤트 */
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
-        Intent intent;
 
+        Intent intent;
         int id = item.getItemId();
 
         switch (id) {
             case R.id.nav_sell:
                 menuSharedPreferences.storeMenu("sell");
-                page=0;
-                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
-                        "잠시만 기다려 주세요.", true);
-                requestVolley("pageTotal.php");
-                requestVolley("select.php");
+                refreshData();
                 setTitleImage();
                 break;
             case R.id.nav_buy:
                 menuSharedPreferences.storeMenu("buy");
-                page=0;
-                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
-                        "잠시만 기다려 주세요.", true);
-                requestVolley("pageTotal.php");
-                requestVolley("select.php");
+                refreshData();
                 setTitleImage();
                 break;
             case R.id.nav_anonymous:
                 menuSharedPreferences.storeMenu("unknown");
-                page=0;
-                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
-                        "잠시만 기다려 주세요.", true);
-                requestVolley("pageTotal.php");
-                requestVolley("select.php");
+                refreshData();
                 setTitleImage();
                 break;
             case R.id.nav_free:
                 menuSharedPreferences.storeMenu("free");
-                page=0;
-                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
-                        "잠시만 기다려 주세요.", true);
-                requestVolley("pageTotal.php");
-                requestVolley("select.php");
+                refreshData();
                 setTitleImage();
                 break;
             case R.id.nav_translation:
                 menuSharedPreferences.storeMenu("trans");
-                page=0;
-                mProgressDialog = ProgressDialog.show(MainActivity.this, "",
-                        "잠시만 기다려 주세요.", true);
-                requestVolley("pageTotal.php");
-                requestVolley("select.php");
+                refreshData();
                 setTitleImage();
                 break;
             case R.id.nav_insert:
@@ -275,12 +285,15 @@ public class MainActivity extends AppCompatActivity
                 startActivity(intent);
                 break;
         }
+        menuSharedPreferences.storeSearch(""); // 검색조건 초기화
 
+        /* 네비게이션 드로워 설정 */
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
+    /* 통신 */
     public void requestVolley(String str) {
         final String strmenu = str;
         String url = urlStr + str;
@@ -293,9 +306,13 @@ public class MainActivity extends AppCompatActivity
                         requestWaitFlag = false;
                         if (response != null) {
                             if (strmenu.equals("select.php")) {
-                                processResponse(response);
+                                processResponse(response); // select할 경우 결과 가공
+                                /* 프로그래스바 중지 */
+                                if (mProgressDialog != null && mProgressDialog.isShowing()) {
+                                    mProgressDialog.dismiss();
+                                }
                             } else {
-                                processPageTotal(response);
+                                processPageTotal(response); // pageTotal할 경우 결과 가공
                             }
                         }
                     }
@@ -304,8 +321,9 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         error.printStackTrace();
+                        /* 통신 실패 시 프로그래스바와 통신 Flag 중지 */
                         requestWaitFlag = false;
-                        if (mProgressDialog!=null&&mProgressDialog.isShowing()){
+                        if (mProgressDialog != null && mProgressDialog.isShowing()) {
                             mProgressDialog.dismiss();
                         }
                     }
@@ -314,8 +332,16 @@ public class MainActivity extends AppCompatActivity
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<String, String>();
-                params.put("page", Integer.toString(page));
-                params.put("type", menuSharedPreferences.getMenu());
+                String currentPage = Integer.toString(page);
+                String type = menuSharedPreferences.getMenu();
+                String search = menuSharedPreferences.getSearch();
+
+                if (currentPage != null)
+                    params.put("page", currentPage);
+                if (type != null)
+                    params.put("type", type);
+                if (search != null)
+                    params.put("search", search);
                 return params;
             }
         };
@@ -323,33 +349,43 @@ public class MainActivity extends AppCompatActivity
         RequestQueue queue = Volley.newRequestQueue(this);
         request.setShouldCache(false);
         queue.add(request); // 통신시작
-        requestWaitFlag = true;
+        requestWaitFlag = true; // 통신 중복 Flag On
     }
 
 
+    /* pageTotal 가공 */
     public void processPageTotal(String response) {
         if (response != null) {
-            pageTotal = Integer.parseInt(response);
+            try {
+                pageTotal = Integer.parseInt(response);
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public void processResponse(String response) {
+        Type arraylistType = new TypeToken<ArrayList<Board>>() {
+        }.getType(); // 타입 지정
+        ArrayList<Board> board = null;
         Gson gson = new Gson();
 
-        Type arraylistType = new TypeToken<ArrayList<Board>>() {
-        }.getType();
-        ArrayList<Board> board = gson.fromJson(response, arraylistType);
+        /* json형에서 ArrayList<Board>객체로 변환 */
+        try {
+            board = gson.fromJson(response, arraylistType);
+        } catch (JsonParseException e) {
+            e.printStackTrace();
+        }
+
+        /* 페이지가 0일 경우 리스트 새로고침 외 리스트 추가 */
         if (page == 0) {
             mAdapter.addList(board);
         } else if (board != null) {
             mAdapter.addAll(board);
         }
+
         mAdapter.notifyDataSetChanged();
         mPullToRefreshListView.onRefreshComplete();
-
-        if (mProgressDialog!=null&&mProgressDialog.isShowing()){
-            mProgressDialog.dismiss();
-        }
     }
 
 }

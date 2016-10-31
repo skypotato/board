@@ -12,6 +12,7 @@ public class IntroActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_intro);
 
+        /* 2초 후 다음 화면으로 전환 */
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override

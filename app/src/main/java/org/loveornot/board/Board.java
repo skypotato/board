@@ -2,23 +2,29 @@ package org.loveornot.board;
 
 /**
  * Created by hunso on 2016-10-03.
+ * board 클래스 선언
  */
-public class Board {
-    String no;
-    String title;
-    String content;
-    String date;
-    String hit;
-    String id;
-    String name;
-    String password;
-    String type;
+class Board {
+    private String no;
+    private String title;
+    private String content;
+    private String date;
+    private String hit;
+    private String id;
+    private String name;
+    private String type;
 
     public Board(String title, String name, String hit, String no) {
         this.title = title;
         this.name = name;
         this.hit = hit;
         this.no = no;
+    }
+
+    public Board(String content, String date, String name) {
+        this.content = content;
+        this.date = date;
+        this.name = name;
     }
 
     public Board(String content, String date, String hit, String id, String name, String no, String password, String title, String type) {
@@ -28,7 +34,6 @@ public class Board {
         this.id = id;
         this.name = name;
         this.no = no;
-        this.password = password;
         this.title = title;
         this.type = type;
     }
@@ -49,7 +54,7 @@ public class Board {
         this.content = content;
     }
 
-    public String getDate() {
+    String getDate() {
         return date;
     }
 
@@ -57,7 +62,7 @@ public class Board {
         this.date = date;
     }
 
-    public String getHit() {
+    String getHit() {
         return hit;
     }
 
@@ -73,7 +78,7 @@ public class Board {
         this.id = id;
     }
 
-    public String getNo() {
+    String getNo() {
         return no;
     }
 
@@ -81,13 +86,6 @@ public class Board {
         this.no = no;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     public String getTitle() {
         return title;
@@ -97,7 +95,7 @@ public class Board {
         this.title = title;
     }
 
-    public String getType() {
+    String getType() {
         return type;
     }
 

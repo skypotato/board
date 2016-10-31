@@ -1,7 +1,6 @@
 package org.loveornot.board;
 
-
-import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -33,7 +32,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class InsertActivity extends AppCompatActivity {
+public class ModifyActivity extends AppCompatActivity {
 
     /* 서버 URL */
     private final String urlStr = "http://skypotato.esy.es/board/";
@@ -46,37 +45,43 @@ public class InsertActivity extends AppCompatActivity {
     private Button insertBt;
 
     /* 입력 매개변수 */
+    private String no;
     private String id;
     private String name;
-    private String type = "free";
+    private String type;
+    private String title;
+    private String content;
 
-
-    /* 프로그래스바 */
-    private ProgressDialog mProgressDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_insert);
+        setContentView(R.layout.activity_modify);
 
+        Intent getIntent = getIntent();
+        if (getIntent != null) {
+            no = getIntent.getStringExtra("no");
+            title = getIntent.getStringExtra("title");
+            type = getIntent.getStringExtra("type");
+            content = getIntent.getStringExtra("content");
+        } else {
+            Toast.makeText(getApplicationContext(), "no가 없습니다.", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        insertBt = (Button) findViewById(R.id.insertBt);
         titleEdit = (EditText) findViewById(R.id.titleEdit);
         contentEdit = (EditText) findViewById(R.id.contentEdit);
 
-        insertBt = (Button) findViewById(R.id.insertBt);
-        insertBt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                requestVolley("insert.php");
-                finish();
-            }
-        });
+        titleEdit.setText(title);
+        contentEdit.setText(content);
 
-        /* 뒤로가기버튼 추가*/
+
+         /* 뒤로가기버튼 추가*/
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setHomeButtonEnabled(true);
         }
-
 
         /*게시판 리스트*/
         spinner = (Spinner) findViewById(R.id.typeSpinner);
@@ -111,6 +116,14 @@ public class InsertActivity extends AppCompatActivity {
                 type = "free";
             }
         });
+        spinnerSelection(type);
+
+        insertBt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                requestVolley("update.php");
+            }
+        });
     }
 
     @Override
@@ -127,9 +140,8 @@ public class InsertActivity extends AppCompatActivity {
                 finish();
                 return true;
             case R.id.action_finish: // 완료 액션
-                mProgressDialog = ProgressDialog.show(InsertActivity.this, "",
-                        "잠시만 기다려 주세요.", true);
-                requestVolley("insert.php");
+                requestVolley("update.php");
+                finish();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -137,7 +149,8 @@ public class InsertActivity extends AppCompatActivity {
 
     /*통신*/
     public void requestVolley(String str) {
-        String url = urlStr + str;
+        final String strmenu = str;
+        String url = urlStr + strmenu;
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 url,
@@ -145,12 +158,9 @@ public class InsertActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         if (response != null) {
-                            Toast.makeText(getApplicationContext(), response, Toast.LENGTH_SHORT).show();
-                              /* 프로그래스바 중지 */
-                            if (mProgressDialog != null && mProgressDialog.isShowing()) {
-                                mProgressDialog.dismiss();
+                            if (strmenu.equals("update.php")) {
+                                Toast.makeText(getApplicationContext(), response, Toast.LENGTH_SHORT).show();
                             }
-                            finish();
                         }
                     }
                 },
@@ -158,23 +168,19 @@ public class InsertActivity extends AppCompatActivity {
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         error.printStackTrace();
-                          /* 프로그래스바 중지 */
-                        if (mProgressDialog != null && mProgressDialog.isShowing()) {
-                            mProgressDialog.dismiss();
-                        }
                     }
                 }
         ) {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 Map<String, String> params = new HashMap<>();
-                params.put("id", id);
+                params.put("no", no);
                 params.put("title", titleEdit.getText().toString());
                 params.put("content", contentEdit.getText().toString());
                 params.put("type", type);
-                if("unknown".equals(type)){
+                if ("unknown".equals(type)) {
                     params.put("name", "unknown");
-                }else {
+                } else {
                     params.put("name", name);
                 }
                 return params;
@@ -184,6 +190,27 @@ public class InsertActivity extends AppCompatActivity {
         RequestQueue queue = Volley.newRequestQueue(this);
         request.setShouldCache(false);
         queue.add(request);
+    }
+
+
+    private void spinnerSelection(String type) {
+        switch (type) {
+            case "free":
+                spinner.setSelection(0);
+                break;
+            case "buy":
+                spinner.setSelection(1);
+                break;
+            case "sell":
+                spinner.setSelection(2);
+                break;
+            case "unknown":
+                spinner.setSelection(3);
+                break;
+            case "trans":
+                spinner.setSelection(4);
+                break;
+        }
     }
 
     @Override

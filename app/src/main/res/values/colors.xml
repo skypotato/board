@@ -2,6 +2,6 @@
 <resources>
     <color name="colorPrimary">#2db400</color>
     <color name="colorPrimaryDark">#2db400</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#2db400</color>
     <color name="floatingAction">#5B7484</color>
 </resources>
