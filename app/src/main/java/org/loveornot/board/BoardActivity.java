@@ -115,6 +115,7 @@ BoardActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        requestVolley("/board/updateHit.php");
     }
 
 
@@ -123,7 +124,6 @@ BoardActivity extends AppCompatActivity {
                 "잠시만 기다려 주세요.", true);
         requestVolley("/response/totalNum.php");
         requestVolley("/response/selectOne.php");
-        requestVolley("/board/updateHit.php");
         requestVolley("/board/selectOne.php");
     }
 

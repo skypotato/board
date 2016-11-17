@@ -5,5 +5,7 @@
     <item android:drawable="@drawable/ad1" android:duration="1000" />
     <item android:drawable="@drawable/ad2" android:duration="1000" />
     <item android:drawable="@drawable/ad3" android:duration="1000" />
+    <item android:drawable="@drawable/ad4" android:duration="1000" />
+    <item android:drawable="@drawable/ad5" android:duration="1000" />
 
 </animation-list>
